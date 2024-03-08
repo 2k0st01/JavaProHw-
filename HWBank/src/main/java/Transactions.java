@@ -1,4 +1,7 @@
 import java.util.Scanner;
+import java.util.function.DoubleConsumer;
+import java.util.function.DoubleSupplier;
+import java.util.function.DoubleUnaryOperator;
 
 public class Transactions {
     private static Transactions transactions = new Transactions();
@@ -13,47 +16,40 @@ public class Transactions {
     }
 
     public static void transaction(Users users, String from, String to) {
-        System.out.println("How many you wood like transfer?");
+        System.out.println("How much would you like to transfer?");
         double amount = sc.nextDouble();
+        Wallet wallet = users.getWallet();
+
         switch (from + "_" + to) {
             case "uah_usd":
-                if (users.getWallet().getUah() >= amount) {
-                    users.getWallet().minusFromUah(amount);
-                    users.getWallet().addToUsd(ExchangeRates.uahToUsd(amount));
-                } else System.out.println("There is not enough money on the balance sheet.");
+                performTransfer(wallet::getUah, wallet::minusFromUah, wallet::addToUsd, ExchangeRates::uahToUsd, amount);
                 break;
             case "uah_eur":
-                if (users.getWallet().getUah() >= amount) {
-                    users.getWallet().minusFromUah(amount);
-                    users.getWallet().addToEur(ExchangeRates.uahToEur(amount));
-                } else System.out.println("There is not enough money on the balance sheet.");
+                performTransfer(wallet::getUah, wallet::minusFromUah, wallet::addToEur, ExchangeRates::uahToEur, amount);
                 break;
             case "eur_usd":
-                if (users.getWallet().getEur() >= amount) {
-                    users.getWallet().minusFromEur(amount);
-                    users.getWallet().addToUsd(ExchangeRates.eurToUsd(amount));
-                } else System.out.println("There is not enough money on the balance sheet.");
+                performTransfer(wallet::getEur, wallet::minusFromEur, wallet::addToUsd, ExchangeRates::eurToUsd, amount);
                 break;
             case "eur_uah":
-                if (users.getWallet().getEur() >= amount) {
-                    users.getWallet().minusFromEur(amount);
-                    users.getWallet().addToUah(ExchangeRates.eurToUah(amount));
-                } else System.out.println("There is not enough money on the balance sheet.");
+                performTransfer(wallet::getEur, wallet::minusFromEur, wallet::addToUah, ExchangeRates::eurToUah, amount);
                 break;
             case "usd_eur":
-                if (users.getWallet().getUsd() >= amount) {
-                    users.getWallet().minusFromUsd(amount);
-                    users.getWallet().addToEur(ExchangeRates.usdToEur(amount));
-                } else System.out.println("There is not enough money on the balance sheet.");
+                performTransfer(wallet::getUsd, wallet::minusFromUsd, wallet::addToEur, ExchangeRates::usdToEur, amount);
                 break;
             case "usd_uah":
-                if (users.getWallet().getUsd() >= amount) {
-                    users.getWallet().minusFromUsd(amount);
-                    users.getWallet().addToUah(ExchangeRates.usdToUah(amount));
-                } else System.out.println("There is not enough money on the balance sheet.");
+                performTransfer(wallet::getUsd, wallet::minusFromUsd, wallet::addToUah, ExchangeRates::usdToUah, amount);
                 break;
             default:
                 System.out.println("Invalid currency pair.");
+        }
+    }
+    private static void performTransfer(DoubleSupplier balanceGetter, DoubleConsumer subtractor, DoubleConsumer adder, DoubleUnaryOperator converter, double amount) {
+        double balance = balanceGetter.getAsDouble();
+        if (balance >= amount) {
+            subtractor.accept(amount);
+            adder.accept(converter.applyAsDouble(amount));
+        } else {
+            System.out.println("There is not enough money on the balance sheet.");
         }
     }
 }
